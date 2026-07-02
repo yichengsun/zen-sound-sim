@@ -17,6 +17,12 @@ body {
   background: var(--bg);
   font-family: Georgia, 'Times New Roman', serif;
   color: var(--ink);
+  /* this is a touch/click interface, not a document — rapid taps and drags
+     should never trigger native text selection or the mobile tap flash */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 #app {
