@@ -181,6 +181,97 @@ kbd {
   max-width: 20rem;
 }
 
+/* ---- virtual visitors ---- */
+#visitors {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+#invite-btn {
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: #8d8271;
+  background: rgba(20, 17, 13, 0.35);
+  border: 1px solid transparent;
+  border-radius: 1.2rem;
+  padding: 0.42rem 0.95rem;
+  cursor: pointer;
+  transition: all 0.5s ease;
+  backdrop-filter: blur(4px);
+}
+
+#invite-btn:hover:not(:disabled) {
+  color: #cfc4ac;
+  border-color: rgba(190, 165, 110, 0.35);
+}
+
+#invite-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+#invite-menu {
+  display: flex;
+  flex-direction: column;
+  background: rgba(26, 22, 17, 0.94);
+  border: 1px solid #3d3628;
+  border-radius: 8px;
+  padding: 0.35rem;
+  min-width: 11rem;
+}
+
+#invite-menu.hidden {
+  display: none;
+}
+
+#invite-menu button {
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #b8ad96;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+#invite-menu button:hover {
+  background: rgba(190, 165, 110, 0.1);
+  color: #e3d7ba;
+}
+
+#visitor-chips {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.visitor-chip {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: var(--tint, #cbb894);
+  box-shadow: 0 0 8px var(--tint, #cbb894);
+  opacity: 0.85;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.visitor-chip:hover {
+  transform: scale(1.25);
+  opacity: 1;
+}
+
 /* ---- help ---- */
 #help-btn {
   position: absolute;

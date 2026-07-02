@@ -1,17 +1,12 @@
 import type { GestureEvent, GestureListener, GestureType, SculptureId, ZoneId } from '../events';
 import type { SceneHandle } from '../visuals/scene';
+import { PRESS_MS, HUG_MS, MOVE_THRESHOLD, TAP_WINDOW_MS, RAPID_COUNT } from '../gestureTiming';
 
 /**
  * Translates mouse/trackpad input into the contact-mic-shaped event model.
  * In the installation this whole file is replaced by contact-mic analysis;
  * everything downstream stays identical.
  */
-
-const PRESS_MS = 280;
-const HUG_MS = 2500;
-const MOVE_THRESHOLD = 14;
-const TAP_WINDOW_MS = 1600;
-const RAPID_COUNT = 3;
 
 interface Contact {
   sculpture: SculptureId;
@@ -192,7 +187,7 @@ export class GestureEngine {
       c.mode = 'caress';
     }
 
-    if (c.mode === 'caress' && c.sculpture !== 'garden' && now - c.lastCaressEmit > 70) {
+    if (c.mode === 'caress' && c.sculpture !== 'garden' && now - c.lastCaressEmit > 40) {
       c.lastCaressEmit = now;
       const dt = Math.max(8, now - c.lastT);
       const speed = Math.min(1, (step / dt) * 1.6); // ~px/ms → 0-1

@@ -53,7 +53,8 @@ export class Feedback {
   private motes: Mote[] = [];
   private trail: TrailDot[] = [];
   private auras = new Map<SculptureId, Aura>();
-  private lastTrailPos: { x: number; y: number } | null = null;
+  /** keyed per sculpture so one visitor's caress can't corrupt another's trail continuity */
+  private lastTrailPos = new Map<SculptureId, { x: number; y: number }>();
   private glow: Record<SculptureId, number> = { vessel: 0, guardian: 0, trickster: 0, garden: 0 };
   private lightWarm: SVGElement | null;
   private lastT = 0;
@@ -79,6 +80,13 @@ export class Feedback {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     this.canvas.width = innerWidth * dpr;
     this.canvas.height = innerHeight * dpr;
+    // <canvas> is a replaced element: `position:absolute;inset:0` alone does not
+    // stretch it to fill its container — it falls back to its intrinsic size
+    // (the width/height attributes above). Without this, at any devicePixelRatio
+    // other than 1 the canvas displays at dpr× its intended CSS size, and every
+    // draw call (x,y) ends up visually at (dpr*x, dpr*y) instead of at the cursor.
+    this.canvas.style.width = `${innerWidth}px`;
+    this.canvas.style.height = `${innerHeight}px`;
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
@@ -133,8 +141,10 @@ export class Feedback {
       }
       case 'caress': {
         this.bump(ev.sculptureId, 0.08);
-        // luminous dots along the stroke — a visibly different mark than tap rings
-        const prevRaw = this.lastTrailPos;
+        // luminous dots along the stroke — a visibly different mark than tap rings.
+        // Dots stay put and fade rather than continuing to travel in the drag
+        // direction, so the trail reads as "at the hand" instead of lagging behind it.
+        const prevRaw = this.lastTrailPos.get(ev.sculptureId);
         const prev =
           prevRaw && Math.hypot(prevRaw.x - ev.x, prevRaw.y - ev.y) < 80 ? prevRaw : { x: ev.x, y: ev.y };
         const steps = 2;
@@ -143,13 +153,13 @@ export class Feedback {
           this.trail.push({
             x: prev.x + (ev.x - prev.x) * t + (Math.random() - 0.5) * 6,
             y: prev.y + (ev.y - prev.y) * t + (Math.random() - 0.5) * 6,
-            vx: (ev.x - prev.x) * 0.4,
-            vy: (ev.y - prev.y) * 0.4 - 3,
+            vx: (Math.random() - 0.5) * 3,
+            vy: -3 - Math.random() * 3,
             r: 2.5 + Math.random() * 3.5 + ev.speed * 4,
             alpha: 0.5 + ev.speed * 0.3,
           });
         }
-        this.lastTrailPos = { x: ev.x, y: ev.y };
+        this.lastTrailPos.set(ev.sculptureId, { x: ev.x, y: ev.y });
         break;
       }
       case 'proximity':

@@ -9,12 +9,17 @@ import { IdleLife } from './idle';
 import { GardenState } from './state/garden';
 import { buildScene } from './visuals/scene';
 import { Feedback } from './visuals/feedback';
+import { Presence } from './visuals/presence';
 import { buildUI } from './ui';
+import { buildVisitorUI } from './visitorUI';
+import { Ensemble } from './virtual/ensemble';
+import type { VisitorPersonality } from './virtual/visitor';
 import type { GestureEvent, SculptureId } from './events';
 
 const sceneEl = document.getElementById('scene')!;
 const canvas = document.getElementById('feedback') as HTMLCanvasElement;
 const uiEl = document.getElementById('ui')!;
+const visitorsRoot = document.getElementById('visitors-root')!;
 const debugEl = document.getElementById('debug')!;
 const overlay = document.getElementById('overlay')!;
 const enterBtn = document.getElementById('enter') as HTMLButtonElement;
@@ -22,17 +27,23 @@ const enterBtn = document.getElementById('enter') as HTMLButtonElement;
 const scene = buildScene(sceneEl);
 const state = new GardenState();
 const feedback = new Feedback(canvas, scene);
+const presence = new Presence(canvas, scene);
 const engine = new AudioEngine();
 
 let voices: Partial<Record<SculptureId, VesselVoice | GuardianVoice | TricksterVoice>> = {};
 let sandBrush: Tone.NoiseSynth | null = null;
 let lastEvent: GestureEvent | null = null;
+let lastEventSource: 'user' | 'visitor' = 'user';
 const lastTouched = new Map<SculptureId, number>();
 
 // ---------- gesture routing ----------
+// every touch — real cursor or virtual visitor — funnels through here,
+// so the garden can't tell (and doesn't need to) where it came from.
 
-function onGesture(ev: GestureEvent) {
+function onGesture(ev: GestureEvent, source: 'user' | 'visitor' = 'user') {
+  ensemble.observe(ev, source);
   lastEvent = ev;
+  lastEventSource = source;
   state.onGesture(ev);
   feedback.onGesture(ev);
 
@@ -57,7 +68,39 @@ function onGesture(ev: GestureEvent) {
   }
 }
 
-const gestures = new GestureEngine(scene.svg, scene, onGesture);
+const gestures = new GestureEngine(scene.svg, scene, (ev) => onGesture(ev, 'user'));
+
+// ---------- virtual visitors ----------
+
+const ensemble = new Ensemble({
+  scene,
+  emitGesture: (ev, source) => onGesture(ev, source),
+  onCommunion: (activeHolds) => {
+    state.communion(activeHolds);
+    if (activeHolds >= 3) engine.communionSwell();
+  },
+});
+
+const ALL_PERSONALITIES: VisitorPersonality[] = ['cautious', 'playful', 'meditative', 'childlike', 'ritual'];
+
+const visitorUI = buildVisitorUI(
+  visitorsRoot,
+  (choice) => {
+    const personality = choice === 'auto' ? ALL_PERSONALITIES[Math.floor(Math.random() * ALL_PERSONALITIES.length)] : choice;
+    ensemble.invite(personality);
+    syncVisitorUI();
+  },
+  (id) => {
+    ensemble.dismiss(id);
+    syncVisitorUI();
+  }
+);
+visitorUI.setInviteEnabled(false);
+
+function syncVisitorUI() {
+  visitorUI.sync(ensemble.visitors.map((v) => ({ id: v.id, personality: v.personality })));
+  visitorUI.setInviteEnabled(ensemble.visitors.length < 3);
+}
 
 // ---------- soundscape UI ----------
 
@@ -96,6 +139,7 @@ enterBtn.addEventListener('click', async () => {
   );
   idle.start();
   gestures.start();
+  visitorUI.setInviteEnabled(true);
 
   overlay.classList.add('leaving');
   window.setTimeout(() => overlay.remove(), 2600);
@@ -103,15 +147,21 @@ enterBtn.addEventListener('click', async () => {
 
 // ---------- frame + slow loops ----------
 
+let lastFrameT = 0;
 function frame(t: number) {
+  const dt = Math.min(0.1, (t - lastFrameT) / 1000 || 0.016);
+  lastFrameT = t;
   state.update();
+  ensemble.tick(dt);
   feedback.frame(t, state.params);
+  presence.frame(t, ensemble.visitors);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
 window.setInterval(() => {
   if (engine.preset) engine.applyState(state.params);
+  syncVisitorUI();
   renderDebug();
 }, 100);
 
@@ -132,6 +182,10 @@ window.addEventListener('keydown', (e) => {
   engine,
   state,
   Tone,
+  ensemble,
+  presence,
+  scene,
+  feedback,
   get voices() {
     return voices;
   },
@@ -173,5 +227,10 @@ function renderDebug() {
         `roughness   ${lastEvent.roughness.toFixed(2)}`,
       ].join('\n')
     : '— touch a spirit —';
-  debugEl.innerHTML = `<h3>garden state</h3>${bars}\n<h3>last gesture event</h3>${ev}`;
+  const visitorLines = ensemble.visitors.length
+    ? ensemble.visitors
+        .map((v) => `${v.personality.padEnd(11)} ${v.state.padEnd(10)} ${v.sculptureId ?? '-'}`)
+        .join('\n')
+    : '— none present —';
+  debugEl.innerHTML = `<h3>garden state</h3>${bars}\n<h3>visitors</h3>${visitorLines}\n<h3>last gesture event [${lastEventSource}]</h3>${ev}`;
 }

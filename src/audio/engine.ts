@@ -278,6 +278,19 @@ export class AudioEngine {
     this.melodyGain.gain.rampTo(melodyLevel, 1);
   }
 
+  /**
+   * The rare moment: three sculptures held at once. A single shared
+   * swell across the whole chord, distinct from any one voice's bloom.
+   */
+  communionSwell() {
+    if (!this.preset) return;
+    const t = Tone.now();
+    [0, 2, 4, 7].forEach((deg, i) => {
+      this.pad.triggerAttackRelease(this.note(deg, i === 0 ? -1 : 0), 10, t + i * 0.15, 0.5);
+    });
+    this.melody.triggerAttackRelease(this.note(9, 1), 3, t + 0.6, 0.3);
+  }
+
   /** pick a pitch from the active scale; degree wraps, octaveShift transposes */
   note(degree: number, octaveShift = 0): string {
     const s = this.preset.scale;

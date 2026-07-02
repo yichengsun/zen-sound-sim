@@ -1,4 +1,4 @@
-import type { SculptureId } from '../events';
+import type { SculptureId, ZoneId } from '../events';
 
 /**
  * The diorama — a soft illustrated dusk interior, drawn as layered SVG.
@@ -12,6 +12,12 @@ export interface SceneHandle {
   breathe(t: number, wakefulness: number): void;
   /** sculpture anchor point in client coordinates (for canvas feedback) */
   anchor(id: SculptureId): { x: number; y: number };
+  /** which zones exist on this sculpture (varies — e.g. the Trickster has no ears) */
+  zonesOf(id: SculptureId): ZoneId[];
+  /** client-coordinate center of one zone, for virtual visitors to "touch" */
+  zoneCenter(id: SculptureId, zone: ZoneId): { x: number; y: number } | null;
+  /** the sculpture's own rendered bounding box, for sizing things proportionally to it */
+  bounds(id: SculptureId): DOMRect | null;
 }
 
 const BREATH = [
@@ -57,6 +63,24 @@ export function buildScene(container: HTMLElement): SceneHandle {
       if (!g) return { x: innerWidth / 2, y: innerHeight / 2 };
       const r = g.getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height * 0.45 };
+    },
+    zonesOf(id) {
+      const seen = new Set<ZoneId>();
+      svg.querySelectorAll(`[data-sculpture="${id}"] [data-zone]`).forEach((el) => {
+        seen.add(el.getAttribute('data-zone') as ZoneId);
+      });
+      return [...seen];
+    },
+    zoneCenter(id, zone) {
+      const els = svg.querySelectorAll(`[data-sculpture="${id}"] [data-zone="${zone}"]`);
+      if (!els.length) return null;
+      const el = els[Math.floor(Math.random() * els.length)];
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    },
+    bounds(id) {
+      const g = groups[id];
+      return g ? g.getBoundingClientRect() : null;
     },
   };
 }

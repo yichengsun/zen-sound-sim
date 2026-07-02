@@ -102,6 +102,23 @@ export class GardenState {
     }
   }
 
+  /**
+   * Rare group state: multiple sculptures held at once (by the real
+   * visitor, virtual visitors, or both). Rewarded beyond what any single
+   * hold gives, so "several sculptures held together" feels like its own
+   * distinct, deeper moment rather than just simultaneous individual holds.
+   */
+  communion(activeHolds: number) {
+    const strength = activeHolds >= 3 ? 1 : 0.55;
+    this.nudge({
+      warmth: 0.35 * strength,
+      calm: 0.2 * strength,
+      density: 0.06 * strength,
+      wakefulness: 0.12 * strength,
+      brightness: 0.05 * strength,
+    });
+  }
+
   /** call every frame; eases parameters home */
   update() {
     const now = performance.now();
