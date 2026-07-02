@@ -477,3 +477,47 @@ kbd {
   margin: 0.5rem 0 0.25rem;
   font-weight: normal;
 }
+
+#debug-variants {
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid #3d3628;
+}
+
+.variant-row {
+  margin: 0.5rem 0;
+}
+
+.variant-label {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8d8271;
+  font-size: 0.6rem;
+  margin-bottom: 0.25rem;
+}
+
+.variant-row button {
+  font-family: inherit;
+  font-size: 0.6rem;
+  letter-spacing: 0.03em;
+  color: #8d8271;
+  background: none;
+  border: 1px solid #3d3628;
+  border-radius: 3px;
+  padding: 0.2rem 0.45rem;
+  margin: 0 0.3rem 0.3rem 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.variant-row button:hover {
+  color: #cfc4ac;
+  border-color: rgba(190, 165, 110, 0.4);
+}
+
+.variant-row button.active {
+  color: #e3d7ba;
+  background: rgba(190, 165, 110, 0.16);
+  border-color: rgba(190, 165, 110, 0.5);
+}

@@ -20,6 +20,7 @@ const canvas = document.getElementById('feedback') as HTMLCanvasElement;
 const uiEl = document.getElementById('ui')!;
 const visitorsRoot = document.getElementById('visitors-root')!;
 const debugEl = document.getElementById('debug')!;
+const debugTextEl = document.getElementById('debug-text')!;
 const overlay = document.getElementById('overlay')!;
 const enterBtn = document.getElementById('enter') as HTMLButtonElement;
 
@@ -233,5 +234,39 @@ function renderDebug() {
         .join('\n')
     : '— none present —';
   const autoLabel = ensemble.autoPopulateActive ? 'on' : 'off';
-  debugEl.innerHTML = `<h3>garden state</h3>${bars}\n<h3>visitors (auto: ${autoLabel}, ${ensemble.visitors.length}/${MAX_VISITORS})</h3>${visitorLines}\n<h3>last gesture event [${lastEventSource}]</h3>${ev}`;
+  debugTextEl.innerHTML = `<h3>garden state</h3>${bars}\n<h3>visitors (auto: ${autoLabel}, ${ensemble.visitors.length}/${MAX_VISITORS})</h3>${visitorLines}\n<h3>last gesture event [${lastEventSource}]</h3>${ev}`;
 }
+
+// ---------- debug: sculpture variant switcher ----------
+// built once (not on the 100ms refresh loop) so button listeners survive
+
+const SCULPTURE_POSITIONS: SculptureId[] = ['trickster', 'guardian', 'vessel'];
+
+function buildDebugVariantSwitcher() {
+  const root = document.getElementById('debug-variants')!;
+  root.innerHTML = '<h3>sculpture designs</h3>';
+  for (const id of SCULPTURE_POSITIONS) {
+    const row = document.createElement('div');
+    row.className = 'variant-row';
+    const label = document.createElement('span');
+    label.className = 'variant-label';
+    label.textContent = id;
+    row.appendChild(label);
+
+    const btnGroup = document.createElement('span');
+    for (const variant of scene.variantsFor(id)) {
+      const btn = document.createElement('button');
+      btn.textContent = variant.label;
+      btn.classList.toggle('active', variant.id === scene.currentVariant(id));
+      btn.addEventListener('click', () => {
+        scene.setVariant(id, variant.id);
+        for (const sib of Array.from(btnGroup.children)) sib.classList.remove('active');
+        btn.classList.add('active');
+      });
+      btnGroup.appendChild(btn);
+    }
+    row.appendChild(btnGroup);
+    root.appendChild(row);
+  }
+}
+buildDebugVariantSwitcher();

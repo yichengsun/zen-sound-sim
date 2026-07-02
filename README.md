@@ -45,6 +45,11 @@ Press **`d`** for the debug view: live garden state and the last gesture event.
 - **Stacked Trickster** (left) — bright, mischievous. Wood clicks and plucked
   fragments; repeated taps seed an 8-step pattern that slowly forgets itself.
 
+Each plinth position can also wear alternate sculpture designs adapted from
+the artist's reference photos — press **`d`** for the debug view and switch
+designs per position live. The personality/voice at each position stays the
+same regardless of which design is showing; this is purely a visual A/B tool.
+
 ## Five soundscapes
 
 Selectable bottom-left, each a parameter set (scale, reverb, ambient mix,

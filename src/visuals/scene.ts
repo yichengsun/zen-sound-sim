@@ -1,4 +1,5 @@
 import type { SculptureId, ZoneId } from '../events';
+import { VARIANT_DEFS, type SculptureVariant } from './sculptureVariants';
 
 /**
  * The diorama — a soft illustrated dusk interior, drawn as layered SVG.
@@ -18,6 +19,12 @@ export interface SceneHandle {
   zoneCenter(id: SculptureId, zone: ZoneId): { x: number; y: number } | null;
   /** the sculpture's own rendered bounding box, for sizing things proportionally to it */
   bounds(id: SculptureId): DOMRect | null;
+  /** available sculpture designs for a plinth position (debug-only feature) */
+  variantsFor(id: SculptureId): SculptureVariant[];
+  /** currently displayed design id for a plinth position */
+  currentVariant(id: SculptureId): string;
+  /** swap which sculpture design a plinth position shows, live */
+  setVariant(id: SculptureId, variantId: string): void;
 }
 
 const BREATH = [
@@ -38,6 +45,7 @@ export function buildScene(container: HTMLElement): SceneHandle {
   }
 
   const glowLevel: Record<string, number> = { vessel: 0, guardian: 0, trickster: 0 };
+  const activeVariant: Partial<Record<SculptureId, string>> = { vessel: 'classic', guardian: 'classic', trickster: 'classic' };
 
   return {
     svg,
@@ -81,6 +89,19 @@ export function buildScene(container: HTMLElement): SceneHandle {
     bounds(id) {
       const g = groups[id];
       return g ? g.getBoundingClientRect() : null;
+    },
+    variantsFor(id) {
+      return VARIANT_DEFS[id] ?? [];
+    },
+    currentVariant(id) {
+      return activeVariant[id] ?? 'classic';
+    },
+    setVariant(id, variantId) {
+      const g = groups[id];
+      const variant = VARIANT_DEFS[id]?.find((v) => v.id === variantId);
+      if (!g || !variant) return;
+      g.innerHTML = variant.markup;
+      activeVariant[id] = variantId;
     },
   };
 }
@@ -148,6 +169,60 @@ function svgMarkup(): string {
       <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.6 0.6 0.6 0 0"/>
     </filter>
     <filter id="softBlur"><feGaussianBlur stdDeviation="6"/></filter>
+
+    <!-- alternate sculpture variant palettes -->
+    <radialGradient id="kinTeal" cx="0.4" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#5c7a72"/>
+      <stop offset="1" stop-color="#35473f"/>
+    </radialGradient>
+    <radialGradient id="kinOrangeMid" cx="0.4" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#c96b3f"/>
+      <stop offset="1" stop-color="#9c4726"/>
+    </radialGradient>
+    <radialGradient id="kinOrangeTop" cx="0.4" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#e08a52"/>
+      <stop offset="1" stop-color="#b8562f"/>
+    </radialGradient>
+    <linearGradient id="hornBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7a8288"/>
+      <stop offset="1" stop-color="#5c646b"/>
+    </linearGradient>
+    <linearGradient id="hornSkin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a9297"/>
+      <stop offset="1" stop-color="#6b7378"/>
+    </linearGradient>
+    <linearGradient id="wovenBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a3d2e"/>
+      <stop offset="1" stop-color="#2e2419"/>
+    </linearGradient>
+    <linearGradient id="wovenNeck" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5a4a38"/>
+      <stop offset="1" stop-color="#3a2e22"/>
+    </linearGradient>
+    <radialGradient id="bellDome" cx="0.45" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#6b4f34"/>
+      <stop offset="1" stop-color="#3a2618"/>
+    </radialGradient>
+    <linearGradient id="bellBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a85a3a"/>
+      <stop offset="1" stop-color="#7a3d24"/>
+    </linearGradient>
+    <linearGradient id="twineBelly" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9c7a0"/>
+      <stop offset="1" stop-color="#5f6d7a"/>
+    </linearGradient>
+    <linearGradient id="twineNeck" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e0d0a8"/>
+      <stop offset="1" stop-color="#c2a67e"/>
+    </linearGradient>
+    <linearGradient id="bottleDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f4d47"/>
+      <stop offset="1" stop-color="#232d29"/>
+    </linearGradient>
+    <radialGradient id="bottlePale" cx="0.4" cy="0.3" r="0.9">
+      <stop offset="0" stop-color="#e6dfcd"/>
+      <stop offset="1" stop-color="#c4bca8"/>
+    </radialGradient>
   </defs>
 
   <!-- ROOM -->
@@ -289,103 +364,21 @@ function svgMarkup(): string {
     </g>
   </g>
 
-  <!-- SCULPTURES -->
+  <!-- SCULPTURES (initial content = the "classic" variant; swappable at runtime via setVariant) -->
 
-  <!-- Stacked Trickster -->
-  <g id="sculpture-trickster" class="sculpture" data-sculpture="trickster">
-    <g pointer-events="none">
-      <ellipse cx="490" cy="384" rx="9" ry="10" fill="#332e29"/>
-      <ellipse cx="490" cy="398" rx="27" ry="13" fill="url(#rust)"/>
-      <rect x="442" y="400" width="96" height="70" rx="17" fill="url(#charcoal)"/>
-      <line x1="448" y1="418" x2="532" y2="418" stroke="#57504a" stroke-width="1.6" opacity="0.7"/>
-      <line x1="446" y1="452" x2="534" y2="452" stroke="#28231f" stroke-width="1.6" opacity="0.8"/>
-      <circle cx="470" cy="433" r="7.5" fill="#17130f"/>
-      <circle cx="510" cy="433" r="7.5" fill="#17130f"/>
-      <rect x="418" y="468" width="144" height="30" rx="14" fill="url(#rust)"/>
-      <rect x="428" y="495" width="124" height="72" rx="12" fill="url(#charcoal)"/>
-      <path d="M 452 567 a 11 14 0 0 1 22 0 Z" fill="#a3543e"/>
-      <path d="M 479 567 a 11 14 0 0 1 22 0 Z" fill="#a3543e"/>
-      <path d="M 506 567 a 11 14 0 0 1 22 0 Z" fill="#a3543e"/>
-      <line x1="434" y1="512" x2="546" y2="512" stroke="#57504a" stroke-width="1.4" opacity="0.6"/>
-    </g>
-    <g fill="transparent">
-      <rect x="414" y="380" width="152" height="190" data-zone="body"/>
-      <ellipse cx="490" cy="528" rx="64" ry="40" data-zone="belly"/>
-      <ellipse cx="490" cy="412" rx="56" ry="34" data-zone="head"/>
-      <ellipse cx="490" cy="436" rx="34" ry="20" data-zone="face"/>
-    </g>
-  </g>
-
-  <!-- Sleepy Guardian -->
-  <g id="sculpture-guardian" class="sculpture" data-sculpture="guardian">
-    <g pointer-events="none">
-      <path d="M 805 240
-               C 758 240 734 276 730 320
-               C 726 352 714 372 699 396
-               C 678 431 689 468 730 470
-               L 880 470
-               C 921 468 932 431 911 396
-               C 896 372 884 352 880 320
-               C 876 276 852 240 805 240 Z" fill="url(#guardianSkin)"/>
-      <g stroke="#4a3627" stroke-width="2" fill="none" opacity="0.35">
-        <path d="M 805 242 v 224"/>
-        <path d="M 776 246 q -10 108 -32 216"/>
-        <path d="M 834 246 q 10 108 32 216"/>
-        <path d="M 752 258 q -14 96 -42 196"/>
-        <path d="M 858 258 q 14 96 42 196"/>
-      </g>
-      <rect x="700" y="352" width="24" height="42" rx="12" fill="#96734f"/>
-      <rect x="886" y="352" width="24" height="42" rx="12" fill="#96734f"/>
-      <path d="M 752 352 q 12 12 26 8" stroke="#2b2018" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-      <path d="M 858 352 q -12 12 -26 8" stroke="#2b2018" stroke-width="4.5" stroke-linecap="round" fill="none"/>
-      <path d="M 793 356 q 12 -8 24 0 l -4 36 q -8 6 -16 0 Z" fill="#6b4d34"/>
-      <circle cx="799" cy="390" r="2" fill="#3d2c1e"/>
-      <circle cx="811" cy="390" r="2" fill="#3d2c1e"/>
-      <path d="M 788 422 q 17 10 34 0" stroke="#4a3627" stroke-width="3" stroke-linecap="round" fill="none" opacity="0.7"/>
-    </g>
-    <g fill="transparent">
-      <path d="M 805 240 C 758 240 734 276 730 320 C 726 352 714 372 699 396 C 678 431 689 468 730 470 L 880 470 C 921 468 932 431 911 396 C 896 372 884 352 880 320 C 876 276 852 240 805 240 Z" data-zone="body"/>
-      <ellipse cx="805" cy="442" rx="86" ry="34" data-zone="belly"/>
-      <ellipse cx="805" cy="278" rx="60" ry="42" data-zone="head"/>
-      <ellipse cx="805" cy="382" rx="58" ry="48" data-zone="face"/>
-      <circle cx="710" cy="372" r="30" data-zone="ear"/>
-      <circle cx="900" cy="372" r="30" data-zone="ear"/>
-    </g>
-  </g>
-
-  <!-- Listening Vessel -->
-  <g id="sculpture-vessel" class="sculpture" data-sculpture="vessel">
-    <g pointer-events="none">
-      <circle cx="1105" cy="480" r="68" fill="url(#vesselBelly)"/>
-      <rect x="1078" y="340" width="54" height="122" rx="26" fill="url(#vesselNeck)"/>
-      <path d="M 1082 350 q 23 14 46 0 l 0 34 q -10 10 -23 10 q -13 0 -23 -10 Z" fill="#4f5f54" opacity="0.45"/>
-      <ellipse cx="1105" cy="342" rx="27" ry="9" fill="#46554b"/>
-      <ellipse cx="1105" cy="342" rx="18" ry="5" fill="#333f37"/>
-      <circle cx="1070" cy="382" r="11" fill="#6d7c6b"/>
-      <circle cx="1140" cy="382" r="11" fill="#6d7c6b"/>
-      <path d="M 1090 386 q 6 5 12 0" stroke="#2c3831" stroke-width="3" stroke-linecap="round" fill="none"/>
-      <path d="M 1108 386 q 6 5 12 0" stroke="#2c3831" stroke-width="3" stroke-linecap="round" fill="none"/>
-      <circle cx="1105" cy="404" r="3" fill="#2c3831"/>
-      <path d="M 1085 474 q 6 6 13 0" stroke="#8d8168" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.8"/>
-      <path d="M 1112 474 q 6 6 13 0" stroke="#8d8168" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.8"/>
-      <path d="M 1096 495 q 9 7 18 0" stroke="#8d8168" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.7"/>
-      <path d="M 1058 448 q -10 22 -6 44" stroke="#c6bb9e" stroke-width="3" fill="none" opacity="0.5"/>
-    </g>
-    <g fill="transparent">
-      <rect x="1074" y="336" width="62" height="130" data-zone="body"/>
-      <circle cx="1105" cy="480" r="66" data-zone="belly"/>
-      <ellipse cx="1105" cy="344" rx="30" ry="15" data-zone="head"/>
-      <ellipse cx="1105" cy="394" rx="27" ry="32" data-zone="face"/>
-      <circle cx="1068" cy="382" r="20" data-zone="ear"/>
-      <circle cx="1142" cy="382" r="20" data-zone="ear"/>
-    </g>
-  </g>
+  <g id="sculpture-trickster" class="sculpture" data-sculpture="trickster">${classicMarkup('trickster')}</g>
+  <g id="sculpture-guardian" class="sculpture" data-sculpture="guardian">${classicMarkup('guardian')}</g>
+  <g id="sculpture-vessel" class="sculpture" data-sculpture="vessel">${classicMarkup('vessel')}</g>
 
   <!-- atmosphere -->
   <rect id="light-warm" width="1600" height="1000" fill="url(#glowWarm)" opacity="0" pointer-events="none"/>
   <rect width="1600" height="1000" fill="url(#vignette)" pointer-events="none"/>
   <rect width="1600" height="1000" filter="url(#grain)" opacity="0.055" pointer-events="none"/>
 </svg>`;
+}
+
+function classicMarkup(id: SculptureId): string {
+  return VARIANT_DEFS[id].find((v) => v.id === 'classic')!.markup;
 }
 
 function dotGrid(x0: number, y0: number, cols: number, rows: number, gap: number, r: number): string {
