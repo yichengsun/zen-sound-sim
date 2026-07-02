@@ -1,10 +1,15 @@
 import type { GestureEvent, GestureType, SculptureId } from '../events';
 import type { SceneHandle } from '../visuals/scene';
-import { Visitor, type VisitorPersonality } from './visitor';
+import { PERSONALITY_IDS, Visitor, type SculptureAssignment, type VisitorPersonality } from './visitor';
 
 const SCULPTURES: SculptureId[] = ['vessel', 'guardian', 'trickster'];
-const MAX_VISITORS = 3;
+/** two visitors can share a sculpture (opposite sides), so the cap is 3 sculptures × 2 */
+const SLOTS_PER_SCULPTURE = 2;
+export const MAX_VISITORS = SCULPTURES.length * SLOTS_PER_SCULPTURE;
 const NOTABLE_WINDOW_MS = 6000;
+/** ambient auto-populate pacing: mean seconds between arrival checks, and odds of an arrival per check */
+const AUTO_CHECK_MS: [number, number] = [9000, 18000];
+const AUTO_INVITE_CHANCE = 0.55;
 
 export interface EnsembleDeps {
   scene: SceneHandle;
@@ -20,17 +25,22 @@ export interface EnsembleDeps {
  * sharing a garden rather than colliding in it:
  *  - politeness: visitors hang back while the real visitor is active
  *  - call-and-response: they sometimes echo a real gesture on their own sculpture
- *  - occupancy: one visitor per sculpture, and they don't sit on the one you're touching
+ *  - occupancy: up to two visitors per sculpture (opposite sides), and they
+ *    prefer sculptures you aren't currently touching
  *  - communion: multiple sculptures held at once is detected and rewarded upstream
+ *  - auto-populate: an optional passive mode where the garden invites and
+ *    releases visitors on its own, continuously, until toggled off
  */
 export class Ensemble {
   visitors: Visitor[] = [];
+  autoPopulateActive = false;
 
-  private occupied = new Map<SculptureId, string>();
+  private occupied = new Map<SculptureId, string[]>();
   private activeHolds = new Set<SculptureId>();
   private holdTier = 0;
   private lastRealTouchAny = -Infinity;
   private lastNotable: { sculptureId: SculptureId; gestureType: GestureType; at: number } | null = null;
+  private autoTimer: number | undefined;
 
   constructor(private deps: EnsembleDeps) {}
 
@@ -72,8 +82,8 @@ export class Ensemble {
     this.lastNotable = null;
   }
 
-  private requestSculpture(visitor: Visitor): SculptureId | null {
-    const free = SCULPTURES.filter((id) => !this.occupied.has(id));
+  private requestSculpture(visitor: Visitor): SculptureAssignment | null {
+    const free = SCULPTURES.filter((id) => (this.occupied.get(id)?.length ?? 0) < SLOTS_PER_SCULPTURE);
     if (!free.length) return null;
 
     let pick: SculptureId;
@@ -88,13 +98,20 @@ export class Ensemble {
       const pool = notHeld.length ? notHeld : free;
       pick = pool[Math.floor(Math.random() * pool.length)];
     }
-    this.occupied.set(pick, visitor.id);
-    return pick;
+    const occupants = this.occupied.get(pick) ?? [];
+    const slot = occupants.length as 0 | 1;
+    occupants.push(visitor.id);
+    this.occupied.set(pick, occupants);
+    return { sculptureId: pick, slot };
   }
 
   private releaseSculpture(visitor: Visitor) {
-    for (const [sculptureId, visitorId] of this.occupied) {
-      if (visitorId === visitor.id) this.occupied.delete(sculptureId);
+    for (const [sculptureId, occupants] of this.occupied) {
+      const idx = occupants.indexOf(visitor.id);
+      if (idx === -1) continue;
+      occupants.splice(idx, 1);
+      if (!occupants.length) this.occupied.delete(sculptureId);
+      break;
     }
   }
 
@@ -118,6 +135,32 @@ export class Ensemble {
 
   dismiss(id: string) {
     this.visitors.find((v) => v.id === id)?.dismiss();
+  }
+
+  /**
+   * Passive mode: the garden invites and releases visitors on its own,
+   * continuously, until this is toggled off. Existing visitors are left
+   * alone when turned off — they just finish out their own visit.
+   */
+  setAutoPopulate(active: boolean) {
+    if (active === this.autoPopulateActive) return;
+    this.autoPopulateActive = active;
+    window.clearTimeout(this.autoTimer);
+    this.autoTimer = undefined;
+    if (active) this.scheduleAutoTick();
+  }
+
+  private scheduleAutoTick() {
+    const [min, max] = AUTO_CHECK_MS;
+    // politely slower while the real visitor is actively touching something
+    const delay = (min + Math.random() * (max - min)) / Math.max(0.35, this.politenessFactor());
+    this.autoTimer = window.setTimeout(() => {
+      if (!this.autoPopulateActive) return;
+      if (this.visitors.length < MAX_VISITORS && Math.random() < AUTO_INVITE_CHANCE) {
+        this.invite(PERSONALITY_IDS[Math.floor(Math.random() * PERSONALITY_IDS.length)]);
+      }
+      this.scheduleAutoTick();
+    }, delay);
   }
 
   tick(dt: number) {

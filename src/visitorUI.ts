@@ -18,13 +18,18 @@ const TINT: Record<VisitorPersonality, string> = {
 
 export interface VisitorUIHandle {
   sync(list: { id: string; personality: VisitorPersonality }[]): void;
+  /** gates the whole cluster before the garden has started (audio unlocked) */
+  setEntered(entered: boolean): void;
+  /** gates only the specific-personality picks once full — "+" and the auto toggle stay reachable */
   setInviteEnabled(enabled: boolean): void;
+  setAutoActive(active: boolean): void;
 }
 
 /** quiet top-left cluster: "+ visitor" invite menu, and a dot per present visitor */
 export function buildVisitorUI(
   container: HTMLElement,
-  onInvite: (choice: VisitorPersonality | 'auto') => void,
+  onInvite: (personality: VisitorPersonality) => void,
+  onToggleAuto: (active: boolean) => void,
   onDismiss: (id: string) => void
 ): VisitorUIHandle {
   const wrap = document.createElement('div');
@@ -38,15 +43,28 @@ export function buildVisitorUI(
   menu.id = 'invite-menu';
   menu.classList.add('hidden');
 
-  const options: Array<VisitorPersonality | 'auto'> = ['auto', 'cautious', 'playful', 'meditative', 'childlike', 'ritual'];
-  for (const p of options) {
+  const autoBtn = document.createElement('button');
+  autoBtn.className = 'auto-toggle';
+  autoBtn.textContent = 'let the garden choose';
+  autoBtn.title = 'toggle a passive mode where the garden invites and releases visitors on its own';
+  autoBtn.addEventListener('click', () => {
+    const active = !autoBtn.classList.contains('active');
+    onToggleAuto(active);
+    menu.classList.add('hidden');
+  });
+  menu.appendChild(autoBtn);
+
+  const personalityBtns: HTMLButtonElement[] = [];
+  const personalities: VisitorPersonality[] = ['cautious', 'playful', 'meditative', 'childlike', 'ritual'];
+  for (const p of personalities) {
     const b = document.createElement('button');
-    b.textContent = p === 'auto' ? 'let the garden choose' : LABELS[p];
+    b.textContent = LABELS[p];
     b.addEventListener('click', () => {
       onInvite(p);
       menu.classList.add('hidden');
     });
     menu.appendChild(b);
+    personalityBtns.push(b);
   }
 
   inviteBtn.addEventListener('click', () => menu.classList.toggle('hidden'));
@@ -72,11 +90,21 @@ export function buildVisitorUI(
         chips.appendChild(chip);
       }
     },
+    setEntered(entered) {
+      inviteBtn.disabled = !entered;
+    },
     setInviteEnabled(enabled) {
-      inviteBtn.disabled = !enabled;
+      // the "+" button and the auto-choose toggle stay reachable even when the
+      // garden is full — only picking a specific personality is blocked, so
+      // there's always a way to open the menu and turn auto-populate back off
       inviteBtn.title = enabled
         ? 'invite a virtual visitor to tend the garden'
-        : 'the garden is full — send someone off first';
+        : 'the garden is full — send someone off, or open the menu to manage visitors';
+      for (const b of personalityBtns) b.disabled = !enabled;
+    },
+    setAutoActive(active) {
+      autoBtn.classList.toggle('active', active);
+      inviteBtn.classList.toggle('auto-active', active);
     },
   };
 }

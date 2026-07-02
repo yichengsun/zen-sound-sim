@@ -6,11 +6,17 @@ export type VisitorPersonality = 'cautious' | 'playful' | 'meditative' | 'childl
 
 export type VisitorState = 'arriving' | 'attending' | 'performing' | 'resting' | 'leaving' | 'gone';
 
+export interface SculptureAssignment {
+  sculptureId: SculptureId;
+  /** which of the (up to two) spots at this sculpture — lets presence place them on opposite sides */
+  slot: 0 | 1;
+}
+
 export interface VisitorDeps {
   scene: SceneHandle;
   /** emit a gesture event; the ensemble tags it with source: 'visitor' */
   emit: (ev: GestureEvent) => void;
-  requestSculpture: (visitor: Visitor) => SculptureId | null;
+  requestSculpture: (visitor: Visitor) => SculptureAssignment | null;
   releaseSculpture: (visitor: Visitor) => void;
   politenessFactor: () => number;
   peekEcho: () => { sculptureId: SculptureId; gestureType: GestureType } | null;
@@ -116,6 +122,8 @@ export const PERSONALITIES: Record<VisitorPersonality, PersonalityConfig> = {
   },
 };
 
+export const PERSONALITY_IDS = Object.keys(PERSONALITIES) as VisitorPersonality[];
+
 let idSeq = 0;
 
 /**
@@ -128,6 +136,7 @@ export class Visitor {
   readonly id = `visitor-${++idSeq}`;
   readonly personality: VisitorPersonality;
   sculptureId: SculptureId | null = null;
+  slot: 0 | 1 = 0;
   state: VisitorState = 'arriving';
   activity = 0;
 
@@ -158,13 +167,15 @@ export class Visitor {
   }
 
   private async run() {
-    const sculptureId = this.deps.requestSculpture(this);
-    if (!sculptureId) {
+    const assignment = this.deps.requestSculpture(this);
+    if (!assignment) {
       this.state = 'gone';
       this.deps.onRemove(this);
       return;
     }
+    const { sculptureId, slot } = assignment;
     this.sculptureId = sculptureId;
+    this.slot = slot;
     this.state = 'arriving';
 
     try {

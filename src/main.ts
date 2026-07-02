@@ -12,8 +12,7 @@ import { Feedback } from './visuals/feedback';
 import { Presence } from './visuals/presence';
 import { buildUI } from './ui';
 import { buildVisitorUI } from './visitorUI';
-import { Ensemble } from './virtual/ensemble';
-import type { VisitorPersonality } from './virtual/visitor';
+import { Ensemble, MAX_VISITORS } from './virtual/ensemble';
 import type { GestureEvent, SculptureId } from './events';
 
 const sceneEl = document.getElementById('scene')!;
@@ -81,25 +80,26 @@ const ensemble = new Ensemble({
   },
 });
 
-const ALL_PERSONALITIES: VisitorPersonality[] = ['cautious', 'playful', 'meditative', 'childlike', 'ritual'];
-
 const visitorUI = buildVisitorUI(
   visitorsRoot,
-  (choice) => {
-    const personality = choice === 'auto' ? ALL_PERSONALITIES[Math.floor(Math.random() * ALL_PERSONALITIES.length)] : choice;
+  (personality) => {
     ensemble.invite(personality);
     syncVisitorUI();
+  },
+  (active) => {
+    ensemble.setAutoPopulate(active);
+    visitorUI.setAutoActive(active);
   },
   (id) => {
     ensemble.dismiss(id);
     syncVisitorUI();
   }
 );
-visitorUI.setInviteEnabled(false);
+visitorUI.setEntered(false);
 
 function syncVisitorUI() {
   visitorUI.sync(ensemble.visitors.map((v) => ({ id: v.id, personality: v.personality })));
-  visitorUI.setInviteEnabled(ensemble.visitors.length < 3);
+  visitorUI.setInviteEnabled(ensemble.visitors.length < MAX_VISITORS);
 }
 
 // ---------- soundscape UI ----------
@@ -139,7 +139,7 @@ enterBtn.addEventListener('click', async () => {
   );
   idle.start();
   gestures.start();
-  visitorUI.setInviteEnabled(true);
+  visitorUI.setEntered(true);
 
   overlay.classList.add('leaving');
   window.setTimeout(() => overlay.remove(), 2600);
@@ -229,8 +229,9 @@ function renderDebug() {
     : '— touch a spirit —';
   const visitorLines = ensemble.visitors.length
     ? ensemble.visitors
-        .map((v) => `${v.personality.padEnd(11)} ${v.state.padEnd(10)} ${v.sculptureId ?? '-'}`)
+        .map((v) => `${v.personality.padEnd(11)} ${v.state.padEnd(10)} ${(v.sculptureId ?? '-').padEnd(10)} slot ${v.slot}`)
         .join('\n')
     : '— none present —';
-  debugEl.innerHTML = `<h3>garden state</h3>${bars}\n<h3>visitors</h3>${visitorLines}\n<h3>last gesture event [${lastEventSource}]</h3>${ev}`;
+  const autoLabel = ensemble.autoPopulateActive ? 'on' : 'off';
+  debugEl.innerHTML = `<h3>garden state</h3>${bars}\n<h3>visitors (auto: ${autoLabel}, ${ensemble.visitors.length}/${MAX_VISITORS})</h3>${visitorLines}\n<h3>last gesture event [${lastEventSource}]</h3>${ev}`;
 }

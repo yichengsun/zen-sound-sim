@@ -62,10 +62,13 @@ export class Presence {
     if (!b) return a;
     // proportional to the sculpture's own rendered size, so the visitor sits
     // visibly close beside it at any window size instead of a fixed pixel
-    // offset that can land far away (or get clamped to the screen edge)
-    const side = REST_SIDE[v.sculptureId];
+    // offset that can land far away (or get clamped to the screen edge).
+    // A second visitor at the same sculpture takes the opposite side, at a
+    // slightly different height, so two presences never sit on top of each other.
+    const preferredSide = REST_SIDE[v.sculptureId];
+    const side = v.slot === 0 ? preferredSide : ((-preferredSide) as 1 | -1);
     const x = a.x + side * (b.width * 0.62 + 22);
-    const y = a.y + b.height * 0.5;
+    const y = a.y + b.height * (v.slot === 0 ? 0.5 : 0.64);
     return {
       x: Math.min(innerWidth - 30, Math.max(30, x)),
       y: Math.min(innerHeight - 30, y),
