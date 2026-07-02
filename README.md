@@ -1,5 +1,7 @@
 # Ceramic Spirits — a tactile zen garden sound sketch
 
+**Live demo:** https://yichengsun.github.io/zen-sound-sim/
+
 An interactive audio-visual prototype for a tactile ceramic zen garden
 installation: three ceramic spirits on speaker-plinths respond to touch with
 generative sound. Built as a creative sketching tool to explore interaction
@@ -14,6 +16,9 @@ bun run dev
 
 Open http://localhost:5173, click **enter the garden** (browsers require a
 gesture before audio), and put on headphones.
+
+To deploy to GitHub Pages: `./scripts/deploy.sh` (builds and force-pushes
+`dist/` to the `gh-pages` branch).
 
 ## Touching the spirits
 
