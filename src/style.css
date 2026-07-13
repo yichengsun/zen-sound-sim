@@ -60,8 +60,8 @@ body {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
   justify-content: center;
+  overflow-y: auto;
   background: radial-gradient(ellipse at 50% 45%, #2e2822 0%, #17140f 75%);
   transition: opacity 2.4s ease;
   z-index: 10;
@@ -73,6 +73,11 @@ body {
 }
 
 .overlay-inner {
+  /* margin: auto (not the parent's align-items: center) so that on short
+     landscape viewports the whole block scrolls into view instead of
+     clipping top/bottom — flex centering + overflow can't be scrolled to
+     see the clipped edge, margin-auto centering can */
+  margin: auto;
   text-align: center;
   max-width: 30rem;
   padding: 2rem;
@@ -127,6 +132,10 @@ body {
   letter-spacing: 0.08em;
 }
 
+.overlay-inner .tiny + .tiny {
+  margin-top: 0.35rem;
+}
+
 kbd {
   font-family: inherit;
   border: 1px solid #5c5344;
@@ -141,15 +150,23 @@ kbd {
   right: 0;
   bottom: 0;
   padding: 1.1rem 1.6rem;
+  padding-left: calc(1.6rem + env(safe-area-inset-left));
+  /* reserve room for the floating #help-btn (2.5rem wide, sitting 1.4rem from
+     the edge) so a wrapped soundscape pill can never render underneath it */
+  padding-right: calc(4.6rem + env(safe-area-inset-right));
+  padding-bottom: calc(1.1rem + env(safe-area-inset-bottom));
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
+  gap: 0.6rem;
   pointer-events: none;
   z-index: 5;
 }
 
 #ui .soundscapes {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   pointer-events: auto;
 }
@@ -184,14 +201,14 @@ kbd {
   letter-spacing: 0.06em;
   pointer-events: none;
   text-align: right;
-  max-width: 20rem;
+  max-width: min(20rem, 42vw);
 }
 
 /* ---- virtual visitors ---- */
 #visitors {
   position: absolute;
-  top: 1rem;
-  left: 1rem;
+  top: calc(1rem + env(safe-area-inset-top));
+  left: calc(1rem + env(safe-area-inset-left));
   z-index: 6;
   display: flex;
   flex-direction: column;
@@ -324,8 +341,8 @@ kbd {
 /* ---- help ---- */
 #help-btn {
   position: absolute;
-  right: 1.4rem;
-  bottom: 3.4rem;
+  right: calc(1.4rem + env(safe-area-inset-right));
+  bottom: calc(3.4rem + env(safe-area-inset-bottom));
   width: 2.1rem;
   height: 2.1rem;
   border-radius: 50%;
@@ -350,8 +367,9 @@ kbd {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
   justify-content: center;
+  overflow-y: auto;
+  padding: 1rem;
   background: rgba(12, 10, 7, 0.55);
   backdrop-filter: blur(3px);
   z-index: 8;
@@ -366,7 +384,9 @@ kbd {
 .help-card {
   position: relative;
   max-width: 30rem;
-  margin: 1rem;
+  /* margin: auto (not the parent's align-items: center) so a tall card on a
+     short landscape viewport scrolls fully into view instead of clipping */
+  margin: auto;
   background: rgba(26, 22, 17, 0.96);
   border: 1px solid #3d3628;
   border-radius: 10px;
@@ -442,9 +462,11 @@ kbd {
 /* ---- debug ---- */
 #debug {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  width: 21rem;
+  top: calc(1rem + env(safe-area-inset-top));
+  right: calc(1rem + env(safe-area-inset-right));
+  width: min(21rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
   background: rgba(12, 10, 8, 0.82);
   border: 1px solid #3d3628;
   border-radius: 6px;
@@ -520,4 +542,61 @@ kbd {
   color: #e3d7ba;
   background: rgba(190, 165, 110, 0.16);
   border-color: rgba(190, 165, 110, 0.5);
+}
+
+/* ---- compact spacing on short viewports (landscape phones) ---- */
+@media (max-height: 500px) {
+  .overlay-inner {
+    max-width: 26rem;
+    padding: 1rem 1.5rem;
+  }
+
+  .overlay-inner h1 {
+    font-size: 1.6rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .overlay-inner .sub {
+    margin-bottom: 1rem;
+  }
+
+  .overlay-inner .hint {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .overlay-inner .tiny {
+    margin-top: 1rem;
+  }
+
+  .overlay-inner .tiny + .tiny {
+    margin-top: 0.3rem;
+  }
+
+  .help-card {
+    padding: 1.6rem 1.8rem 1.2rem;
+  }
+
+  .help-card dl {
+    row-gap: 0.4rem;
+    margin-bottom: 0.9rem;
+  }
+
+  #ui {
+    padding-top: 0.6rem;
+    padding-bottom: calc(0.6rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* ---- larger touch targets on touch devices ---- */
+@media (pointer: coarse) {
+  .visitor-chip {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  #help-btn {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
 }

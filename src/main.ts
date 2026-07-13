@@ -13,7 +13,11 @@ import { Presence } from './visuals/presence';
 import { buildUI } from './ui';
 import { buildVisitorUI } from './visitorUI';
 import { Ensemble, MAX_VISITORS } from './virtual/ensemble';
+import { PERSONALITY_IDS } from './virtual/visitor';
 import type { GestureEvent, SculptureId } from './events';
+
+/** the garden never opens empty — this many virtual visitors greet you on entry */
+const DEFAULT_VISITOR_COUNT = 3;
 
 const sceneEl = document.getElementById('scene')!;
 const canvas = document.getElementById('feedback') as HTMLCanvasElement;
@@ -141,6 +145,11 @@ enterBtn.addEventListener('click', async () => {
   idle.start();
   gestures.start();
   visitorUI.setEntered(true);
+
+  for (let i = 0; i < DEFAULT_VISITOR_COUNT; i++) {
+    ensemble.invite(PERSONALITY_IDS[Math.floor(Math.random() * PERSONALITY_IDS.length)]);
+  }
+  syncVisitorUI();
 
   overlay.classList.add('leaving');
   window.setTimeout(() => overlay.remove(), 2600);
