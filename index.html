@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Ceramic Spirits — a tactile zen garden sketch</title>
+    <script type="module" crossorigin src="./assets/index-CeroYEOW.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-REOyfMR6.css">
+  </head>
+  <body>
+    <div id="app">
+      <div id="scene"></div>
+      <canvas id="feedback"></canvas>
+      <div id="visitors-root"></div>
+      <div id="ui"></div>
+      <button id="help-btn" title="how this works" aria-label="help">?</button>
+      <div id="help" class="hidden">
+        <div class="help-card">
+          <button id="help-close" aria-label="close">×</button>
+          <h2>tending the garden</h2>
+          <p class="help-intro">
+            Three ceramic spirits live here. They answer touch with sound —
+            slowly, the way a garden answers care.
+          </p>
+          <dl>
+            <dt>tap</dt>
+            <dd>click — a ceramic tone, a knock, a pluck</dd>
+            <dt>repeated tapping</dt>
+            <dd>rapid clicks — seeds a quiet rhythm that slowly fades</dd>
+            <dt>press</dt>
+            <dd>click and hold — a drone swells; the longer you stay, the warmer it grows</dd>
+            <dt>hug</dt>
+            <dd>keep holding (~3s) — a rare warm bloom that deepens the whole garden</dd>
+            <dt>caress</dt>
+            <dd>drag slowly — breath and shimmer follow your hand</dd>
+            <dt>faces &amp; ears</dt>
+            <dd>the intimate zones — small voice-like answers; ears open the stereo field</dd>
+            <dt>visitors</dt>
+            <dd>
+              invite virtual visitors (top left) — pick a personality, or toggle
+              "let the garden choose" to have it invite and release visitors on
+              its own, continuously, until you turn it off. up to six can be
+              present at once. they tend the garden gently and make way when
+              you're active. holding several sculptures at once, together, is
+              rare and worth staying for.
+            </dd>
+          </dl>
+          <p class="help-note">
+            Gentle, sustained touch is rewarded most: as the garden warms,
+            chords and small melodies begin to grow underneath everything.
+            Left alone, the spirits murmur in their sleep.
+          </p>
+          <p class="help-note dim">
+            soundscapes: bottom left · gesture debug view: press <kbd>d</kbd>
+          </p>
+        </div>
+      </div>
+      <div id="debug" class="hidden">
+        <div id="debug-variants"></div>
+        <div id="debug-text"></div>
+      </div>
+      <div id="overlay">
+        <div class="overlay-inner">
+          <h1>Ceramic Spirits</h1>
+          <p class="sub">a tactile zen garden — sound sketch</p>
+          <p class="hint">
+            tap · pat · press · caress · hold<br />
+            the spirits listen through their ears, faces, and bodies
+          </p>
+          <button id="enter">enter the garden</button>
+          <p class="tiny">best on desktop or landscape mobile · headphones recommended</p>
+          <p class="tiny">press <kbd>d</kbd> for the gesture debug view</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
